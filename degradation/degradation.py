@@ -253,7 +253,7 @@ class Degradation:
         img = cv2.cvtColor(uint2single(img), cv2.COLOR_BGR2RGB)
         return img
 
-    def degradation_bsrgan_plus(self, img, sf=4, shuffle_prob=0.5, isp_model=None):
+    def degradation_bsrgan_plus(self, img, shuffle_prob=0.5, isp_model=None):
         """
         This is an extended degradation model by combining
         the degradation models of BSRGAN and Real-ESRGAN
@@ -270,7 +270,6 @@ class Degradation:
         """
 
         img = uint2single(np.array(img))
-        img = self.add_sharpening(img)
         hq = img.copy()
 
         if random.random() < shuffle_prob:
@@ -285,9 +284,9 @@ class Degradation:
 
         for i in shuffle_order:
             if i == 0:
-                img = self.add_blur(img, sf=sf)
+                img = self.add_blur(img, sf=self.sf)
             elif i == 1:
-                img = self.add_resize(img, sf=sf)
+                img = self.add_resize(img, sf=self.sf)
             elif i == 2:
                 img = self.add_Gaussian_noise(img, noise_level1=2, noise_level2=25)
             elif i == 3:
@@ -303,9 +302,9 @@ class Degradation:
             elif i == 6:
                 img = self.add_JPEG_noise(img)
             elif i == 7:
-                img = self.add_blur(img, sf=sf)
+                img = self.add_blur(img, sf=self.sf)
             elif i == 8:
-                img = self.add_resize(img, sf=sf)
+                img = self.add_resize(img, sf=self.sf)
             elif i == 9:
                 img = self.add_Gaussian_noise(img, noise_level1=2, noise_level2=25)
             elif i == 10:
@@ -324,7 +323,7 @@ class Degradation:
         # resize to desired size
         img = cv2.resize(
             img,
-            (int(1 / sf * hq.shape[1]), int(1 / sf * hq.shape[0])),
+            (int(1 / self.sf * hq.shape[1]), int(1 / self.sf * hq.shape[0])),
             interpolation=random.choice([1, 2, 3]),
         )
 
@@ -353,5 +352,3 @@ if __name__ == "__main__":
         img_lq = deg.degradation_bsrgan_plus(img, sf=sf, shuffle_prob=0.1)
         img = pil_image.fromarray(img_lq)
         img.save(f"{i}.png")
-
-

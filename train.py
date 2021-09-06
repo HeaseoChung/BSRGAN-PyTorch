@@ -32,6 +32,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[ %(levelname)s ] %(message)s", level=logging.INFO)
 
+""" GPU 개수 설정"""
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
+
 
 def setup(rank, world_size):
     """DDP 디바이스 설정"""

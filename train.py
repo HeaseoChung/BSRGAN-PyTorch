@@ -174,12 +174,20 @@ def gan_trainer(
             psnr.update(calc_psnr(preds, hr), len(lr))
             ssim.update(calc_ssim(preds, hr).mean(), len(lr))
 
-    if device == 0 or not args.distributed:
-        """Best 모델 저장"""
+    if args.distributed:
+        if device == 0:
+            """Best 모델 저장"""
+            if ssim.avg > best_ssim:
+                best_ssim = ssim.avg
+                torch.save(
+                    generator.module.state_dict(),
+                    os.path.join(args.outputs_dir, "best_g.pth"),
+                )
+    else:
         if ssim.avg > best_ssim:
             best_ssim = ssim.avg
             torch.save(
-                generator.module.state_dict(),
+                generator.state_dict(),
                 os.path.join(args.outputs_dir, "best_g.pth"),
             )
 
@@ -194,17 +202,29 @@ def gan_trainer(
                 },
                 os.path.join(args.outputs_dir, "d_epoch_{}.pth".format(epoch)),
             )
-
-            """ Generator 모델 저장 """
-            torch.save(
-                {
-                    "epoch": epoch,
-                    "model_state_dict": generator.module.state_dict(),
-                    "optimizer_state_dict": generator_optimizer.state_dict(),
-                    "best_ssim": best_ssim,
-                },
-                os.path.join(args.outputs_dir, "g_epoch_{}.pth".format(epoch)),
-            )
+            if args.distributed:
+                if device == 0:
+                    """Generator 모델 저장"""
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "model_state_dict": generator.module.state_dict(),
+                            "optimizer_state_dict": generator_optimizer.state_dict(),
+                            "best_ssim": best_ssim,
+                        },
+                        os.path.join(args.outputs_dir, "g_epoch_{}.pth".format(epoch)),
+                    )
+            else:
+                """Generator 모델 저장"""
+                torch.save(
+                    {
+                        "epoch": epoch,
+                        "model_state_dict": generator.state_dict(),
+                        "optimizer_state_dict": generator_optimizer.state_dict(),
+                        "best_ssim": best_ssim,
+                    },
+                    os.path.join(args.outputs_dir, "g_epoch_{}.pth".format(epoch)),
+                )
 
         """1 epoch 마다 텐서보드 업데이트"""
         writer.add_scalar("d_Loss/train", d_losses.avg, epoch)
